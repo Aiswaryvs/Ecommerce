@@ -141,7 +141,7 @@ STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'Ecommerce.User'
 
-MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'Bus_Reservation_System/images')
+MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'EcommerceApplication/images')
 # print(MEDIA_ROOT)
 
 # URL used to access the media

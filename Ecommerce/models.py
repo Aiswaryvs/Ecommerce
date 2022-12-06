@@ -86,12 +86,16 @@ class Product(models.Model):
     added_date =models.DateField(auto_now_add=True)
     updated_date = models.DateField(auto_now=True)
 
+    class Meta:
+        unique_together=('product_name',)
+
+
     def __str__(self):
         return self.product_name
-
+    
 
 class Coupon(models.Model):
-    code  = models. PositiveIntegerField()
+    code  = models. CharField(max_length=100,unique=True)
     discount = models.FloatField()
 
 
@@ -110,31 +114,50 @@ class OrderItem(models.Model):
     def __str__(self):
         return f"{self.quantity} of {self.product_id.product_name}"
 
-    # def get_total_item_price(self):
-    #     return self.quantity * self.product_id.price
+    def get_total_price(self):
+        # print(self.quantity)
+        return self.quantity * self.product_id.price
 
 
-    def get_orderItems_by_customer(customer_id):
-        return OrderItem.objects.filter(customer=customer_id)
+    # def get_orderItems_by_customer(customer_id):
+    #     instance= OrderItem.objects.filter(customer_id=customer_id)
+    #     return instance
 
     
 
 class Order(models.Model):
     invoice_no = models.PositiveIntegerField(primary_key=True)
     customer_id = models.ForeignKey(User,on_delete=models.CASCADE,related_name="customer")
-    orderitem_id = models.ForeignKey(OrderItem,on_delete=models.CASCADE,related_name="oritem")
+    orderitem_id = models.ManyToManyField(OrderItem)
     order_status = (
+        ('ordered','ordered'),
         ('pending','pending'),
         ('accepted','accepted'),
         ('packed','packed'),
         ('on the way','on the way'),
         ('delivered','delivered'),
-        ('cancel', 'cancel') )
-    status = models.CharField(choices=order_status, default="pending", max_length=20)
+        ('cancel', 'cancel'),
+        ('return','return') )
+    status = models.CharField(choices=order_status, default="ordered", max_length=20)
     amount = models.PositiveIntegerField(blank=True,null=True)
     order_date = models.DateField(auto_now_add=True)
+    class Meta:
+        unique_together=('customer_id',)
 
-    @property
-    def get_total_item_price(self):
-        total= self.orderitem_id.quantity * self.orderitem_id.product_id.price
-        return total
+
+    # def get_orderItems_by_customer(customer_id):
+    #     instance= Order.objects.filter(customer_id=customer_id)
+    #     return instance
+    
+    def get_total(self):
+        orders =self.orderitem_id.all()
+        print(orders)
+        amount=0
+        for i in orders:
+            # print(i,i.get_total_price())
+            amount+=i.get_total_price()
+        return amount
+        
+          
+
+        

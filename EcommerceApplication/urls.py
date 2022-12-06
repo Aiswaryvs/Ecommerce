@@ -30,7 +30,10 @@ urlpatterns = [
     path('api/category/<int:id>',views.CategoryDetailView.as_view()),
     path('api/cart',views.CartView.as_view()),
     path('api/cart/<id>',views.CartDetailsView.as_view()),
-    path('api/order',views.OrderView.as_view())
+    path('api/order',views.OrderView.as_view()),
+    path('api/order/<id>',views.OrderDetailView.as_view()),
+    path('api/coupon',views.CouponView.as_view()),
+    path('api/coupon/<int:id>',views.CouponDetailView.as_view()),
 
 
 

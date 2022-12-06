@@ -112,7 +112,8 @@ class ProductDetailView(generics.RetrieveDestroyAPIView):
 
 class CategoryView(generics.ListCreateAPIView):
     serializer_class = CategorySerializer
-    
+    filter_backends = [SearchFilter]
+    search_fields = ['c_name']
     
     def get(self, request, *args, **kwargs):
         response = {'status':status.HTTP_400_BAD_REQUEST, "message": "Fetching Categories failed"}
@@ -171,14 +172,14 @@ class CategoryDetailView(generics.RetrieveDestroyAPIView):
         return Response(response,status=status.HTTP_200_OK)
 
 
-class CartView(generics.ListAPIView):
+class CartView(generics.ListCreateAPIView):
     serializer_class =  CartSerializer
-    filter_backends = [SearchFilter]
-    search_fields = ['customer_id','id']
-
+    
     def get(self, request, *args, **kwargs):
         response = {'status':status.HTTP_400_BAD_REQUEST, "message": "Fetching CartItems failed"}
         cart_list = OrderItem.objects.all()
+        # cart_list = OrderItem.get_orderItems_by_customer(6)
+        print(cart_list.values())
         serializer = self.serializer_class(cart_list, many=True)
         response["status"] = status.HTTP_200_OK
         response["data"] = serializer.data
@@ -203,9 +204,6 @@ class CartDetailsView(generics.RetrieveUpdateDestroyAPIView):
     def get(self,request,*args,**kwargs):
         response = {'status':status.HTTP_400_BAD_REQUEST, "message": " Fetching Cart item failed"}
         id = kwargs.get("id")
-        # product=request.data["product_id"]
-        # pr= Product.objects.get(id=product)
-        # print(pr.price)
         cart_item= OrderItem.objects.get(id=id)
         serializer= self.serializer_class(cart_item)
         response["status"] = status.HTTP_200_OK
@@ -244,7 +242,13 @@ class OrderView(generics.ListCreateAPIView):
 
     def get(self, request, *args, **kwargs):
         response = {'status':status.HTTP_400_BAD_REQUEST, "message": "Fetching Orders failed"}
-        order_list = OrderSerializer.objects.all()
+        order_list = Order.objects.all()
+        order_id = request.data["orderitem_id"]
+        # print(order_id.product_id)
+        # for i in order_list:
+        #     print(i.get_total())
+        # order_list= Order.get_orderItems_by_customer(4)
+        print(order_list.values())
         serializer = self.serializer_class(order_list, many=True)
         response["status"] = status.HTTP_200_OK
         response["data"] = serializer.data
@@ -254,12 +258,115 @@ class OrderView(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         response = {'status':status.HTTP_400_BAD_REQUEST, "message": "Order Placing failed"}
         serializer = self.get_serializer(data=request.data)
-        amount = Order.get_total_item_price
-        print(amount)
+        # id=request.data['invoice_no']
+        # print(id)
         if serializer.is_valid(raise_exception=True):
+            order_object=serializer.save()
+            order_object.amount = order_object.get_total()
             serializer.save()
+            # order_obj = Order.objects.get(customer_id=request.data['customer_id'])
+            # print(order_obj)
+            # print('llll', order_obj.orderitem_id)
+            # print(order_obj.get_total())
+            # print(order_object.amount)
             response["status"] = status.HTTP_200_OK
             response["data"] = serializer.data
             response["message"] = 'message: Order Placed successfully.'
             return Response(response, status=status.HTTP_201_CREATED)
         return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+   
+
+class OrderDetailView(generics.RetrieveDestroyAPIView):
+    serializer_class = OrderSerializer
+    def get(self,request,*args,**kwargs):
+        response = {'status':status.HTTP_400_BAD_REQUEST, "message":"Fetching Order failed"}
+        id= kwargs.get("id")
+        order= Order.objects.get(invoice_no=id)
+        serializer= self.serializer_class(order)
+        response["status"] = status.HTTP_200_OK
+        response["data"] = serializer.data
+        response["message"] = 'message: Order fetched successfully.'
+        return Response(response, status=status.HTTP_200_OK)
+
+    def put(self,request,*args,**kwargs):
+        response = {'status':status.HTTP_400_BAD_REQUEST, "message":"Updating Order failed"}
+        id = kwargs.get("id")
+        od_id= Order.objects.get(invoice_no=id)
+        serializer = self.serializer_class(data=request.data,instance=od_id)
+        if serializer.is_valid():
+            serializer.save()
+            response["status"] = status.HTTP_200_OK
+            response["data"] = serializer.data
+            response["message"] = 'message: Updated Order successfully.'
+            return Response(response, status=status.HTTP_200_OK)
+        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self,request,*args,**kwargs):
+        response = {"status":status.HTTP_400_BAD_REQUEST,"message":"Order Deletion Failed"}
+        id = kwargs.get("id")
+        od = Order.objects.get(invoice_no=id)
+        od.delete()
+        response["message"] = "Order Removed Successfully"
+        response["status"] = status.HTTP_200_OK
+        return Response(response,status=status.HTTP_200_OK)
+
+class CouponView(generics.ListCreateAPIView):
+    serializer_class = CouponSerializer
+
+
+    def get(self, request, *args, **kwargs):
+        response = {'status':status.HTTP_400_BAD_REQUEST, "message": "Fetching Coupons failed"}
+        coupon_list = Coupon.objects.all()
+        serializer = self.serializer_class(coupon_list, many=True)
+        response["status"] = status.HTTP_200_OK
+        response["data"] = serializer.data
+        response["message"] = 'Coupons Fetched Successfully'
+        return Response(response, status=status.HTTP_201_CREATED)
+
+    def post(self, request, *args, **kwargs):
+        response = {'status':status.HTTP_400_BAD_REQUEST, "message": "Coupon Creation failed"}
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            response["status"] = status.HTTP_200_OK
+            response["data"] = serializer.data
+            response["message"] = 'message: Coupon Created successfully.'
+            return Response(response, status=status.HTTP_201_CREATED)
+        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+class CouponDetailView(generics.RetrieveDestroyAPIView):
+    serializer_class = CouponSerializer
+
+
+    def get(self,request,*args,**kwargs):
+        response = {'status':status.HTTP_400_BAD_REQUEST, "message":"Fetching Coupon failed"}
+        id = kwargs.get("id")
+        coupon= Coupon.objects.get(id=id)
+        serializer= self.serializer_class(coupon)
+        response["status"] = status.HTTP_200_OK
+        response["data"] = serializer.data
+        response["message"] = 'message: Coupon fetched successfully.'
+        return Response(response, status=status.HTTP_200_OK)
+
+    def put(self,request,*args,**kwargs):
+        response = {'status':status.HTTP_400_BAD_REQUEST, "message":"Updating Coupon failed"}
+        id = kwargs.get("id")
+        cp_id= Coupon.objects.get(id=id)
+        serializer = self.serializer_class(data=request.data,instance=cp_id)
+        if serializer.is_valid():
+            serializer.save()
+            response["status"] = status.HTTP_200_OK
+            response["data"] = serializer.data
+            response["message"] = 'message: Updated Coupon successfully.'
+            return Response(response, status=status.HTTP_200_OK)
+        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self,request,*args,**kwargs):
+        response = {"status":status.HTTP_400_BAD_REQUEST,"message":"Coupon Deletion Failed"}
+        id = kwargs.get("id")
+        cp = Coupon.objects.get(id=id)
+        cp.delete()
+        response["message"] = "Coupon Removed Successfully"
+        response["status"] = status.HTTP_200_OK
+        return Response(response,status=status.HTTP_200_OK)

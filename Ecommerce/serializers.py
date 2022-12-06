@@ -18,6 +18,8 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = "__all__"
 
+
+
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -28,15 +30,28 @@ class OrderItemSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = "__all__"
 
-class OrderSerializer(serializers.ModelSerializer):
+
+class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Order
-        fields = "__all__"
+        model = Product
+        fields = ['product_name','price','image']
+
 
 class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model= OrderItem
         fields = ["customer_id","product_id","quantity"]
-        # depth=1
 
-   
+
+class OrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = "__all__"
+
+    
+    
+    
+class CouponSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coupon
+        fields = '__all__'
