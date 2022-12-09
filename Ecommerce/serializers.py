@@ -34,23 +34,35 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class ProductDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['product_name','price','image']
+        fields = ['product_name','price']
 
 
 class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model= OrderItem
         fields = ["customer_id","product_id","quantity"]
-
+class CartDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= OrderItem
+        fields = ["quantity"]
 
 class OrderSerializer(serializers.ModelSerializer):
+    # product = serializers.SerializerMethodField("get_values")
+    # quantity = CartDetailsSerializer(read_only=True,many=True)
+    
     class Meta:
         model = Order
-        fields = "__all__"
+        fields ="__all__"
+    
+    # def to_representation(self, instance):
+    #     representation = super().to_representation(instance)
+    #     print("lll",representation)
+    #     id=representation['orderitem_id']
+    #     representation['product'] = instance.orderitem_id.values()
+    #     return representation
 
-    
-    
-    
+  
+
 class CouponSerializer(serializers.ModelSerializer):
     class Meta:
         model = Coupon

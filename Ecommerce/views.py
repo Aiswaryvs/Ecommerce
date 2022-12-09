@@ -243,7 +243,7 @@ class OrderView(generics.ListCreateAPIView):
     def get(self, request, *args, **kwargs):
         response = {'status':status.HTTP_400_BAD_REQUEST, "message": "Fetching Orders failed"}
         order_list = Order.objects.all()
-        order_id = request.data["orderitem_id"]
+        # order_id = request.data["orderitem_id"]
         # print(order_id.product_id)
         # for i in order_list:
         #     print(i.get_total())
@@ -258,21 +258,36 @@ class OrderView(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         response = {'status':status.HTTP_400_BAD_REQUEST, "message": "Order Placing failed"}
         serializer = self.get_serializer(data=request.data)
-        # id=request.data['invoice_no']
-        # print(id)
+        sts=request.data['status']
+        print(sts)
+        id=request.data['orderitem_id']
+        print(id)
+        for i in id:
+            items = OrderItem.objects.get(id=i)
+            print(items.product_id.quantity_left)
+            print(items.product_id.quantity_sold)
+            if sts=="ordered":
+                items.product_id.quantity_left=items.product_id.quantity_left-1
+                items.product_id.quantity_sold=items.product_id.quantity_sold+1
+                print(items.product_id.quantity_sold)
+                print(items.product_id.quantity_left)
+                items.product_id.save()
+        
         if serializer.is_valid(raise_exception=True):
-            order_object=serializer.save()
-            order_object.amount = order_object.get_total()
-            serializer.save()
-            # order_obj = Order.objects.get(customer_id=request.data['customer_id'])
-            # print(order_obj)
-            # print('llll', order_obj.orderitem_id)
-            # print(order_obj.get_total())
-            # print(order_object.amount)
-            response["status"] = status.HTTP_200_OK
-            response["data"] = serializer.data
-            response["message"] = 'message: Order Placed successfully.'
-            return Response(response, status=status.HTTP_201_CREATED)
+                order_object=serializer.save()
+                order_object.amount = order_object.get_total()
+                serializer.save()
+                
+                # order_obj = Order.objects.get(customer_id=request.data['customer_id'])
+                # print(order_obj)
+                # print('llll', order_obj.orderitem_id)
+                # print(order_obj.get_total())
+                # print(order_object.amount)
+       
+                response["status"] = status.HTTP_200_OK
+                response["data"] = serializer.data
+                response["message"] = 'message: Order Placed successfully.'
+                return Response(response, status=status.HTTP_201_CREATED)
         return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
    
@@ -290,17 +305,33 @@ class OrderDetailView(generics.RetrieveDestroyAPIView):
         return Response(response, status=status.HTTP_200_OK)
 
     def put(self,request,*args,**kwargs):
-        response = {'status':status.HTTP_400_BAD_REQUEST, "message":"Updating Order failed"}
+        # response = {'status':status.HTTP_400_BAD_REQUEST, "message":"Updating Order failed"}
         id = kwargs.get("id")
+        r_id=request.data['orderitem_id']
+        print(id)
+        print(r_id)
         od_id= Order.objects.get(invoice_no=id)
         serializer = self.serializer_class(data=request.data,instance=od_id)
         if serializer.is_valid():
-            serializer.save()
-            response["status"] = status.HTTP_200_OK
-            response["data"] = serializer.data
-            response["message"] = 'message: Updated Order successfully.'
-            return Response(response, status=status.HTTP_200_OK)
-        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+            status = serializer.validated_data.get("status")
+            od_id.status = status
+            od_id.save()
+            if status=="cancel" or "return":
+                for i in r_id:
+                    items = OrderItem.objects.get(id=i)
+                    items.product_id.quantity_left=items.product_id.quantity_left+1
+                    items.product_id.quantity_sold=items.product_id.quantity_sold-1
+                    print( items.product_id.quantity_left)
+                    print( items.product_id.quantity_sold)
+                    items.product_id.save()
+                # serializer.save()
+                # response["status"] = status.HTTP_200_OK
+                # response["data"] = serializer.data
+                # response["message"] = 'message: Updated Order successfully.'
+                return Response(data=serializer.data)
+            else:
+                return Response({"cancellation of order failed"}) 
+    
     
     def delete(self,request,*args,**kwargs):
         response = {"status":status.HTTP_400_BAD_REQUEST,"message":"Order Deletion Failed"}

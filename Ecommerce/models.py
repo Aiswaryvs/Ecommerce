@@ -119,6 +119,9 @@ class OrderItem(models.Model):
         return self.quantity * self.product_id.price
 
 
+    # def get_total_discount_item_price(self):
+    #     return self.quantity * self.item.discount_price
+
     # def get_orderItems_by_customer(customer_id):
     #     instance= OrderItem.objects.filter(customer_id=customer_id)
     #     return instance
@@ -141,9 +144,7 @@ class Order(models.Model):
     status = models.CharField(choices=order_status, default="ordered", max_length=20)
     amount = models.PositiveIntegerField(blank=True,null=True)
     order_date = models.DateField(auto_now_add=True)
-    class Meta:
-        unique_together=('customer_id',)
-
+    coupon_id = models.ForeignKey(Coupon,on_delete=models.CASCADE,blank=True, null=True)
 
     # def get_orderItems_by_customer(customer_id):
     #     instance= Order.objects.filter(customer_id=customer_id)
@@ -151,13 +152,13 @@ class Order(models.Model):
     
     def get_total(self):
         orders =self.orderitem_id.all()
-        print(orders)
+        # print(orders)
         amount=0
         for i in orders:
-            # print(i,i.get_total_price())
             amount+=i.get_total_price()
+        if self.coupon_id:
+            sum=self.coupon_id.discount/100
+            amount-=amount*sum
         return amount
-        
-          
-
-        
+    
+    
